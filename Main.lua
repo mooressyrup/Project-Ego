@@ -105,11 +105,7 @@ combatTab:Combo({
 
 local selectedSlot = 1
 local function setWidgetLabel(widget, text)
-    -- The ImGUI proxy's methods must be called with dot syntax.
-    local label = widget.FindFirstChild("Label", true)
-    if label and (label:IsA("TextLabel") or label:IsA("TextButton")) then
-        label.Text = text
-    end
+    widget.Text = text
 end
 
 local bindButton
