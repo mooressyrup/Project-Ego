@@ -11,8 +11,7 @@ local function getBinding(input)
         return input.KeyCode
     end
 
-    if input.UserInputType == Enum.UserInputType.MouseButton4
-        or input.UserInputType == Enum.UserInputType.MouseButton5 then
+    if input.UserInputType.Name:match("^MouseButton") then
         return input.UserInputType
     end
 end

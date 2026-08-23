@@ -104,6 +104,22 @@ combatTab:Combo({
 })
 
 local selectedSlot = 1
+local function setWidgetLabel(widget, text)
+    -- The ImGUI proxy's methods must be called with dot syntax.
+    local label = widget.FindFirstChild("Label", true)
+    if label and (label:IsA("TextLabel") or label:IsA("TextButton")) then
+        label.Text = text
+    end
+end
+
+local bindButton
+local function updateBindButton()
+    setWidgetLabel(bindButton, ("Bind Slot %d (%s)"):format(
+        selectedSlot,
+        Keybinds:GetBindingName(selectedSlot)
+    ))
+end
+
 keybindsTab:Slider({
     Label = "Hotbar Slot",
     MinValue = 1,
@@ -112,25 +128,34 @@ keybindsTab:Slider({
     Format = "%d",
     Callback = function(_, value)
         selectedSlot = math.round(value)
+        if bindButton then
+            updateBindButton()
+        end
     end,
 })
 
-keybindsTab:Button({
-    Label = "Bind Selected Slot",
+bindButton = keybindsTab:Button({
+    Label = "",
     Callback = function()
+        setWidgetLabel(bindButton, "Press a key or mouse button...")
+
         task.spawn(function()
             local input = UserInputService.InputBegan:Wait()
             Keybinds:SetBinding(selectedSlot, input)
+            updateBindButton()
         end)
     end,
 })
+updateBindButton()
 
-keybindsTab:Button({
-    Label = "Clear Selected Binding",
+local clearBindButton = keybindsTab:Button({
+    Label = "",
     Callback = function()
         Keybinds:ClearBinding(selectedSlot)
+        updateBindButton()
     end,
 })
+setWidgetLabel(clearBindButton, "Clear Selected Binding")
 
 mainTab:Button({
     Text = "Test",
