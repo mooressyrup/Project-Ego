@@ -104,27 +104,6 @@ combatTab:Combo({
 })
 
 local selectedSlot = 1
-local bindButton
-local function setBindButtonText(text)
-    local label = bindButton:FindFirstChild("Label", true)
-    if label and (label:IsA("TextLabel") or label:IsA("TextButton")) then
-        label.Text = text
-    else
-        bindButton.Text = text
-    end
-end
-
-local function updateBindButton()
-    if not bindButton then
-        return
-    end
-
-    setBindButtonText(("Bind Slot %d (%s)"):format(
-        selectedSlot,
-        Keybinds:GetBindingName(selectedSlot)
-    ))
-end
-
 keybindsTab:Slider({
     Label = "Hotbar Slot",
     MinValue = 1,
@@ -133,29 +112,23 @@ keybindsTab:Slider({
     Format = "%d",
     Callback = function(_, value)
         selectedSlot = math.round(value)
-        updateBindButton()
     end,
 })
 
-bindButton = keybindsTab:Button({
-    Label = "Bind Slot 1 (Unbound)",
+keybindsTab:Button({
+    Label = "Bind Selected Slot",
     Callback = function()
-        setBindButtonText("Press a keyboard key or side mouse button...")
-
         task.spawn(function()
             local input = UserInputService.InputBegan:Wait()
             Keybinds:SetBinding(selectedSlot, input)
-            updateBindButton()
         end)
     end,
 })
-updateBindButton()
 
 keybindsTab:Button({
     Label = "Clear Selected Binding",
     Callback = function()
         Keybinds:ClearBinding(selectedSlot)
-        updateBindButton()
     end,
 })
 
