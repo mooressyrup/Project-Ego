@@ -28,7 +28,7 @@ table.sort(teamNames)
 
 local window = ImGui:CreateWindow({
     Title = "Project Ego",
-    Size = Vector2.new(500, 350),
+    Size = UDim2.fromOffset(500, 350),
 })
 
 local mainTab = window:CreateTab({
@@ -105,12 +105,21 @@ combatTab:Combo({
 
 local selectedSlot = 1
 local bindButton
+local function setBindButtonText(text)
+    local label = bindButton:FindFirstChild("Label", true)
+    if label and (label:IsA("TextLabel") or label:IsA("TextButton")) then
+        label.Text = text
+    else
+        bindButton.Text = text
+    end
+end
+
 local function updateBindButton()
     if not bindButton then
         return
     end
 
-    bindButton:SetLabel(("Bind Slot %d (%s)"):format(
+    setBindButtonText(("Bind Slot %d (%s)"):format(
         selectedSlot,
         Keybinds:GetBindingName(selectedSlot)
     ))
@@ -131,7 +140,7 @@ keybindsTab:Slider({
 bindButton = keybindsTab:Button({
     Label = "Bind Slot 1 (Unbound)",
     Callback = function()
-        bindButton:SetLabel("Press a keyboard key or side mouse button...")
+        setBindButtonText("Press a keyboard key or side mouse button...")
 
         task.spawn(function()
             local input = UserInputService.InputBegan:Wait()
