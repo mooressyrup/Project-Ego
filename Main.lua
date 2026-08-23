@@ -18,6 +18,7 @@ local UserInputService = game:GetService("UserInputService")
 local Teams = game:GetService("Teams")
 local PassiveKarma = loadModule("PassiveKarma.lua")
 local HitboxExtender = loadModule("HitboxExtender.lua")
+local Keybinds = loadModule("Keybinds.lua")
 
 local teamNames = { "None" }
 for _, team in Teams:GetTeams() do
@@ -37,6 +38,10 @@ local mainTab = window:CreateTab({
 
 local combatTab = window:CreateTab({
     Name = "Combat",
+})
+
+local keybindsTab = window:CreateTab({
+    Name = "Keybinds",
 })
 
 mainTab:Label({
@@ -95,6 +100,53 @@ combatTab:Combo({
     Selected = "None",
     Callback = function(_, teamName)
         HitboxExtender:SetWhitelistedTeam(teamName == "None" and nil or teamName)
+    end,
+})
+
+local selectedSlot = 1
+local bindButton
+local function updateBindButton()
+    if not bindButton then
+        return
+    end
+
+    bindButton:SetLabel(("Bind Slot %d (%s)"):format(
+        selectedSlot,
+        Keybinds:GetBindingName(selectedSlot)
+    ))
+end
+
+keybindsTab:Slider({
+    Label = "Hotbar Slot",
+    MinValue = 1,
+    MaxValue = 10,
+    Value = selectedSlot,
+    Format = "%d",
+    Callback = function(_, value)
+        selectedSlot = math.round(value)
+        updateBindButton()
+    end,
+})
+
+bindButton = keybindsTab:Button({
+    Label = "Bind Slot 1 (Unbound)",
+    Callback = function()
+        bindButton:SetLabel("Press a keyboard key or side mouse button...")
+
+        task.spawn(function()
+            local input = UserInputService.InputBegan:Wait()
+            Keybinds:SetBinding(selectedSlot, input)
+            updateBindButton()
+        end)
+    end,
+})
+updateBindButton()
+
+keybindsTab:Button({
+    Label = "Clear Selected Binding",
+    Callback = function()
+        Keybinds:ClearBinding(selectedSlot)
+        updateBindButton()
     end,
 })
 

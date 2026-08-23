@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
 local HitboxExtender = {}
 local localPlayer = Players.LocalPlayer
@@ -77,6 +78,28 @@ local function restoreHitboxes()
 
     table.clear(originalStates)
 end
+
+local nextCleanup = 0
+RunService.Heartbeat:Connect(function()
+    if os.clock() < nextCleanup then
+        return
+    end
+    nextCleanup = os.clock() + 0.5
+
+    for part, state in pairs(originalStates) do
+        local character = part.Parent
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then
+            if part.Parent then
+                part.Size = state.size
+            end
+            if state.viewer then
+                state.viewer:Destroy()
+            end
+            originalStates[part] = nil
+        end
+    end
+end)
 
 local function updateHitboxes(expanded)
     for _, player in Players:GetPlayers() do
