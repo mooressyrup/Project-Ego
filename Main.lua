@@ -1,5 +1,4 @@
--- Change this after the project is pushed to GitHub.
-local BASE_URL = "https://raw.githubusercontent.com/OWNER/REPOSITORY/main/"
+local BASE_URL = "https://raw.githubusercontent.com/mooressyrup/Project-Ego/main/"
 
 local function loadModule(path)
     local source = game:HttpGet(BASE_URL .. path)
