@@ -15,8 +15,15 @@ local ImGui = loadstring(game:HttpGet(
     "https://github.com/depthso/Roblox-ImGUI/raw/main/ImGui.lua"
 ), "ProjectEgo/ImGui")()
 local UserInputService = game:GetService("UserInputService")
+local Teams = game:GetService("Teams")
 local PassiveKarma = loadModule("PassiveKarma.lua")
 local HitboxExtender = loadModule("HitboxExtender.lua")
+
+local teamNames = { "None" }
+for _, team in Teams:GetTeams() do
+    table.insert(teamNames, team.Name)
+end
+table.sort(teamNames)
 
 local window = ImGui:CreateWindow({
     Title = "Project Ego",
@@ -26,6 +33,10 @@ local window = ImGui:CreateWindow({
 local mainTab = window:CreateTab({
     Name = "Main",
     Visible = true,
+})
+
+local combatTab = window:CreateTab({
+    Name = "Combat",
 })
 
 mainTab:Label({
@@ -40,7 +51,7 @@ mainTab:Checkbox({
     end,
 })
 
-mainTab:Checkbox({
+combatTab:Checkbox({
     Label = "M1 Hitbox",
     Value = false,
     Callback = function(_, enabled)
@@ -48,7 +59,7 @@ mainTab:Checkbox({
     end,
 })
 
-mainTab:Checkbox({
+combatTab:Checkbox({
     Label = "View Hitboxes",
     Value = false,
     Callback = function(_, enabled)
@@ -56,7 +67,7 @@ mainTab:Checkbox({
     end,
 })
 
-mainTab:Slider({
+combatTab:Slider({
     Label = "Hit Chance",
     MinValue = 0,
     MaxValue = 100,
@@ -67,7 +78,7 @@ mainTab:Slider({
     end,
 })
 
-mainTab:Slider({
+combatTab:Slider({
     Label = "Hitbox Size",
     MinValue = 1,
     MaxValue = 50,
@@ -75,6 +86,15 @@ mainTab:Slider({
     Format = "%d",
     Callback = function(_, value)
         HitboxExtender:SetSize(value)
+    end,
+})
+
+combatTab:Combo({
+    Label = "Hitbox Whitelist",
+    Items = teamNames,
+    Selected = "None",
+    Callback = function(_, teamName)
+        HitboxExtender:SetWhitelistedTeam(teamName == "None" and nil or teamName)
     end,
 })
 

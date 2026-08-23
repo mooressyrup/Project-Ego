@@ -8,6 +8,7 @@ local enabled = false
 local viewEnabled = false
 local chance = 100
 local hitboxSize = 10
+local whitelistedTeamName = nil
 local originalStates = {}
 
 local function getState(part)
@@ -21,6 +22,12 @@ local function getState(part)
     end
 
     return state
+end
+
+local function isWhitelisted(player)
+    return whitelistedTeamName ~= nil
+        and player.Team ~= nil
+        and player.Team.Name == whitelistedTeamName
 end
 
 local function updateViewer(part, state)
@@ -48,6 +55,16 @@ local function updateViewer(part, state)
     viewer.Color3 = state.expanded and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(255, 255, 255)
 end
 
+local function resetHitbox(part, state)
+    state.expanded = false
+    part.Size = state.size
+
+    if state.viewer then
+        state.viewer:Destroy()
+        state.viewer = nil
+    end
+end
+
 local function restoreHitboxes()
     for part, state in pairs(originalStates) do
         if part.Parent then
@@ -73,6 +90,14 @@ local function updateHitboxes(expanded)
             continue
         end
 
+        if isWhitelisted(player) then
+            local state = originalStates[rootPart]
+            if state then
+                resetHitbox(rootPart, state)
+            end
+            continue
+        end
+
         local state = getState(rootPart)
         state.expanded = expanded
         rootPart.Size = expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
@@ -89,6 +114,14 @@ local function refreshHitboxes()
         local character = player.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         if rootPart and rootPart:IsA("BasePart") then
+            if isWhitelisted(player) then
+                local state = originalStates[rootPart]
+                if state then
+                    resetHitbox(rootPart, state)
+                end
+                continue
+            end
+
             local state = getState(rootPart)
             rootPart.Size = state.expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
             updateViewer(rootPart, state)
@@ -119,6 +152,11 @@ function HitboxExtender:SetSize(value)
     if enabled then
         refreshHitboxes()
     end
+end
+
+function HitboxExtender:SetWhitelistedTeam(teamName)
+    whitelistedTeamName = teamName
+    refreshHitboxes()
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
