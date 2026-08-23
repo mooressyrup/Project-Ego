@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 
 local HitboxExtender = {}
 local localPlayer = Players.LocalPlayer
@@ -9,42 +10,77 @@ local chance = 100
 local hitboxSize = 10
 local originalStates = {}
 
-local function showHitbox(part)
-    part.Color = Color3.fromRGB(255, 0, 0)
-    part.Material = Enum.Material.ForceField
-    part.Transparency = 0.5
+local function getState(part)
+    local state = originalStates[part]
+    if not state then
+        state = {
+            size = part.Size,
+            expanded = false,
+        }
+        originalStates[part] = state
+    end
+
+    return state
 end
 
-local function restoreAppearance(part, state)
-    part.Color = state.color
-    part.Material = state.material
-    part.Transparency = state.transparency
+local function updateViewer(part, state)
+    if not viewEnabled then
+        if state.viewer then
+            state.viewer:Destroy()
+            state.viewer = nil
+        end
+        return
+    end
+
+    local viewer = state.viewer
+    if not viewer then
+        viewer = Instance.new("BoxHandleAdornment")
+        viewer.Name = "ProjectEgoHitbox"
+        viewer.Adornee = part
+        viewer.AlwaysOnTop = true
+        viewer.ZIndex = 10
+        viewer.Transparency = 0.55
+        viewer.Parent = CoreGui
+        state.viewer = viewer
+    end
+
+    viewer.Size = state.expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
+    viewer.Color3 = state.expanded and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(255, 255, 255)
 end
 
 local function restoreHitboxes()
     for part, state in pairs(originalStates) do
         if part.Parent then
             part.Size = state.size
-            restoreAppearance(part, state)
+        end
+        if state.viewer then
+            state.viewer:Destroy()
         end
     end
 
     table.clear(originalStates)
 end
 
-local function setHitboxView(value)
-    for part, state in pairs(originalStates) do
-        if part.Parent then
-            if value then
-                showHitbox(part)
-            else
-                restoreAppearance(part, state)
-            end
+local function updateHitboxes(expanded)
+    for _, player in Players:GetPlayers() do
+        if player == localPlayer then
+            continue
         end
+
+        local character = player.Character
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+        if not rootPart or not rootPart:IsA("BasePart") then
+            continue
+        end
+
+        local state = getState(rootPart)
+        state.expanded = expanded
+        rootPart.Size = expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
+        updateViewer(rootPart, state)
     end
 end
 
-local function expandHitboxes()
+local function refreshHitboxes()
     for _, player in Players:GetPlayers() do
         if player == localPlayer then
             continue
@@ -53,19 +89,9 @@ local function expandHitboxes()
         local character = player.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         if rootPart and rootPart:IsA("BasePart") then
-            if not originalStates[rootPart] then
-                originalStates[rootPart] = {
-                    size = rootPart.Size,
-                    color = rootPart.Color,
-                    material = rootPart.Material,
-                    transparency = rootPart.Transparency,
-                }
-            end
-
-            rootPart.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-            if viewEnabled then
-                showHitbox(rootPart)
-            end
+            local state = getState(rootPart)
+            rootPart.Size = state.expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
+            updateViewer(rootPart, state)
         end
     end
 end
@@ -84,14 +110,14 @@ end
 
 function HitboxExtender:SetViewEnabled(value)
     viewEnabled = value
-    setHitboxView(viewEnabled)
+    refreshHitboxes()
 end
 
 function HitboxExtender:SetSize(value)
     hitboxSize = math.max(math.round(value), 1)
 
     if enabled then
-        expandHitboxes()
+        refreshHitboxes()
     end
 end
 
@@ -100,9 +126,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         return
     end
 
-    if math.random(1, 100) <= chance then
-        expandHitboxes()
-    end
+    updateHitboxes(math.random(1, 100) <= chance)
 end)
 
 return HitboxExtender
