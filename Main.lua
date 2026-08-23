@@ -48,6 +48,14 @@ mainTab:Checkbox({
     end,
 })
 
+mainTab:Checkbox({
+    Label = "View Hitboxes",
+    Value = false,
+    Callback = function(_, enabled)
+        HitboxExtender:SetViewEnabled(enabled)
+    end,
+})
+
 mainTab:Slider({
     Label = "Hit Chance",
     MinValue = 0,

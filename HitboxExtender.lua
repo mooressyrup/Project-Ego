@@ -4,18 +4,44 @@ local UserInputService = game:GetService("UserInputService")
 local HitboxExtender = {}
 local localPlayer = Players.LocalPlayer
 local enabled = false
+local viewEnabled = false
 local chance = 100
 local hitboxSize = 10
-local originalSizes = {}
+local originalStates = {}
+
+local function showHitbox(part)
+    part.Color = Color3.fromRGB(255, 0, 0)
+    part.Material = Enum.Material.ForceField
+    part.Transparency = 0.5
+end
+
+local function restoreAppearance(part, state)
+    part.Color = state.color
+    part.Material = state.material
+    part.Transparency = state.transparency
+end
 
 local function restoreHitboxes()
-    for part, originalSize in pairs(originalSizes) do
+    for part, state in pairs(originalStates) do
         if part.Parent then
-            part.Size = originalSize
+            part.Size = state.size
+            restoreAppearance(part, state)
         end
     end
 
-    table.clear(originalSizes)
+    table.clear(originalStates)
+end
+
+local function setHitboxView(value)
+    for part, state in pairs(originalStates) do
+        if part.Parent then
+            if value then
+                showHitbox(part)
+            else
+                restoreAppearance(part, state)
+            end
+        end
+    end
 end
 
 local function expandHitboxes()
@@ -27,11 +53,19 @@ local function expandHitboxes()
         local character = player.Character
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         if rootPart and rootPart:IsA("BasePart") then
-            if not originalSizes[rootPart] then
-                originalSizes[rootPart] = rootPart.Size
+            if not originalStates[rootPart] then
+                originalStates[rootPart] = {
+                    size = rootPart.Size,
+                    color = rootPart.Color,
+                    material = rootPart.Material,
+                    transparency = rootPart.Transparency,
+                }
             end
 
             rootPart.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+            if viewEnabled then
+                showHitbox(rootPart)
+            end
         end
     end
 end
@@ -46,6 +80,11 @@ end
 
 function HitboxExtender:SetChance(value)
     chance = math.clamp(math.round(value), 0, 100)
+end
+
+function HitboxExtender:SetViewEnabled(value)
+    viewEnabled = value
+    setHitboxView(viewEnabled)
 end
 
 function HitboxExtender:SetSize(value)
