@@ -12,27 +12,18 @@ end
 
 local enabled = environment.HBE == true
 local viewEnabled = false
+local debugEnabled = false
 local chance = 100
 local hitboxSize = 10
 local whitelistedTeamName = nil
 local originalStates = {}
 local characterContainer
 
-pcall(function()
-    local metatable = getrawmetatable(game)
-    setreadonly(metatable, false)
-
-    local originalIndex = metatable.__index
-    metatable.__index = function(instance, key)
-        if tostring(instance) == "HumanoidRootPart" and tostring(key) == "Size" then
-            return Vector3.new(2, 2, 1)
-        end
-
-        return originalIndex(instance, key)
+local function debugLog(message)
+    if debugEnabled then
+        print("[Project Ego Hitbox] " .. message)
     end
-
-    setreadonly(metatable, true)
-end)
+end
 
 local function getCharacter(player)
     if characterContainer then
@@ -161,6 +152,7 @@ local function updateHitboxes(expanded)
         local character = getCharacter(player)
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         if not rootPart or not rootPart:IsA("BasePart") then
+            debugLog(("%s: no HumanoidRootPart found"):format(player.Name))
             continue
         end
 
@@ -177,8 +169,13 @@ local function updateHitboxes(expanded)
         rootPart.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
         rootPart.Color = Color3.fromRGB(255, 0, 0)
         rootPart.CanCollide = false
-        rootPart.Transparency = 0.5
+        rootPart.Transparency = state.transparency
         updateViewer(rootPart, state)
+        debugLog(("%s: requested %s, local size is %s"):format(
+            player.Name,
+            tostring(Vector3.new(hitboxSize, hitboxSize, hitboxSize)),
+            tostring(rootPart.Size)
+        ))
     end
 end
 
@@ -201,7 +198,7 @@ local function refreshHitboxes()
             rootPart.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
             rootPart.Color = Color3.fromRGB(255, 0, 0)
             rootPart.CanCollide = false
-            rootPart.Transparency = 0.5
+            rootPart.Transparency = state.transparency
             updateViewer(rootPart, state)
         end
     end
@@ -238,6 +235,11 @@ function HitboxExtender:SetViewEnabled(value)
     end
 end
 
+function HitboxExtender:SetDebugEnabled(value)
+    debugEnabled = value
+    debugLog("debug logging enabled")
+end
+
 function HitboxExtender:SetSize(value)
     hitboxSize = math.max(math.round(value), 1)
 
@@ -259,7 +261,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         return
     end
 
-    updateHitboxes(math.random(1, 100) <= chance)
+    local expanded = math.random(1, 100) <= chance
+    debugLog(("M1: hit chance %d%%, expanding=%s"):format(chance, tostring(expanded)))
+    updateHitboxes(expanded)
 end)
 
 return HitboxExtender

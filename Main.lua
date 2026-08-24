@@ -72,6 +72,14 @@ combatTab:Checkbox({
     end,
 })
 
+combatTab:Checkbox({
+    Label = "Debug Hitboxes",
+    Value = false,
+    Callback = function(_, enabled)
+        HitboxExtender:SetDebugEnabled(enabled)
+    end,
+})
+
 combatTab:Slider({
     Label = "Hit Chance",
     MinValue = 0,
