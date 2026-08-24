@@ -6,13 +6,20 @@ local enabled = false
 local function enableRankTag(character)
     local head = character and character:FindFirstChild("Head")
     local rankTag = head and head:FindFirstChild("RankTag", true)
-    if not rankTag or rankTag:FindFirstChild("Username") then
+    local parent = rankTag and rankTag.Parent
+    if not parent or parent:FindFirstChild("Username") then
         return
     end
 
-    local usernameTag = rankTag:Clone()
+    local success, usernameTag = pcall(function()
+        return rankTag:Clone()
+    end)
+    if not success or not usernameTag then
+        return
+    end
+
     usernameTag.Name = "Username"
-    usernameTag.Parent = rankTag.Parent
+    usernameTag.Parent = parent
 
     pcall(function()
         usernameTag.Enabled = true
