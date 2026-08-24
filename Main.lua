@@ -15,16 +15,9 @@ local ImGui = loadstring(game:HttpGet(
     "https://github.com/depthso/Roblox-ImGUI/raw/main/ImGui.lua"
 ), "ProjectEgo/ImGui")()
 local UserInputService = game:GetService("UserInputService")
-local Teams = game:GetService("Teams")
 local PassiveKarma = loadModule("PassiveKarma.lua")
-local HitboxExtender = loadModule("HitboxExtender.lua")
-local Keybinds = loadModule("Keybinds.lua")
-
-local teamNames = { "None" }
-for _, team in Teams:GetTeams() do
-    table.insert(teamNames, team.Name)
-end
-table.sort(teamNames)
+local HealingCurrent = loadModule("HealingCurrent.lua")
+local ParryExtender = loadModule("ParryExtender.lua")
 
 local window = ImGui:CreateWindow({
     Title = "Project Ego",
@@ -40,10 +33,6 @@ local combatTab = window:CreateTab({
     Name = "Combat",
 })
 
-local keybindsTab = window:CreateTab({
-    Name = "Keybinds",
-})
-
 mainTab:Label({
     Text = "Project Ego loaded.",
 })
@@ -56,110 +45,44 @@ mainTab:Checkbox({
     end,
 })
 
-combatTab:Checkbox({
-    Label = "M1 Hitbox",
-    Value = false,
-    Callback = function(_, enabled)
-        HitboxExtender:SetEnabled(enabled)
-    end,
-})
-
-combatTab:Checkbox({
-    Label = "View Hitboxes",
-    Value = false,
-    Callback = function(_, enabled)
-        HitboxExtender:SetViewEnabled(enabled)
-    end,
-})
-
-combatTab:Checkbox({
-    Label = "Debug Hitboxes",
-    Value = false,
-    Callback = function(_, enabled)
-        HitboxExtender:SetDebugEnabled(enabled)
-    end,
-})
-
-combatTab:Slider({
-    Label = "Hit Chance",
-    MinValue = 0,
-    MaxValue = 100,
-    Value = 100,
-    Format = "%d%%",
-    Callback = function(_, value)
-        HitboxExtender:SetChance(value)
-    end,
-})
-
-combatTab:Slider({
-    Label = "Hitbox Size",
-    MinValue = 1,
-    MaxValue = 50,
-    Value = 10,
-    Format = "%d",
-    Callback = function(_, value)
-        HitboxExtender:SetSize(value)
-    end,
-})
-
-combatTab:Combo({
-    Label = "Hitbox Whitelist",
-    Items = teamNames,
-    Selected = "None",
-    Callback = function(_, teamName)
-        HitboxExtender:SetWhitelistedTeam(teamName == "None" and nil or teamName)
-    end,
-})
-
-local selectedSlot = 1
 local function setWidgetLabel(widget, text)
     widget.Text = text
 end
 
 local bindButton
 local function updateBindButton()
-    setWidgetLabel(bindButton, ("Bind Slot %d (%s)"):format(
-        selectedSlot,
-        Keybinds:GetBindingName(selectedSlot)
-    ))
+    setWidgetLabel(bindButton, "Bind Healing Current (" .. HealingCurrent:GetBindingName() .. ")")
 end
 
-keybindsTab:Slider({
-    Label = "Hotbar Slot",
-    MinValue = 1,
-    MaxValue = 10,
-    Value = selectedSlot,
-    Format = "%d",
-    Callback = function(_, value)
-        selectedSlot = math.round(value)
-        if bindButton then
-            updateBindButton()
-        end
+combatTab:Checkbox({
+    Label = "Enable Healing Current",
+    Value = false,
+    Callback = function(_, enabled)
+        HealingCurrent:SetEnabled(enabled)
     end,
 })
 
-bindButton = keybindsTab:Button({
+bindButton = combatTab:Button({
     Label = "",
     Callback = function()
         setWidgetLabel(bindButton, "Press a key or mouse button...")
 
         task.spawn(function()
             local input = UserInputService.InputBegan:Wait()
-            Keybinds:SetBinding(selectedSlot, input)
+            HealingCurrent:SetBinding(input)
             updateBindButton()
         end)
     end,
 })
 updateBindButton()
 
-local clearBindButton = keybindsTab:Button({
-    Label = "",
-    Callback = function()
-        Keybinds:ClearBinding(selectedSlot)
-        updateBindButton()
+combatTab:Checkbox({
+    Label = "Enable Parry Extender",
+    Value = false,
+    Callback = function(_, enabled)
+        ParryExtender:SetEnabled(enabled)
     end,
 })
-setWidgetLabel(clearBindButton, "Clear Selected Binding")
 
 mainTab:Button({
     Text = "Test",
