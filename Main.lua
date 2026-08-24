@@ -63,13 +63,13 @@ combatTab:Checkbox({
 })
 
 combatTab:Slider({
-    Label = "Healing Current Delay",
+    Label = "Healing Current Delay (ms)",
     MinValue = 0,
-    MaxValue = 2,
-    Value = 0.05,
-    Format = "%.2fs",
+    MaxValue = 2000,
+    Value = 50,
+    Format = "%dms",
     Callback = function(_, value)
-        HealingCurrent:SetDelay(value)
+        HealingCurrent:SetDelay(value / 1000)
     end,
 })
 
@@ -96,13 +96,13 @@ combatTab:Checkbox({
 })
 
 combatTab:Slider({
-    Label = "Parry Delay",
+    Label = "Parry Delay (ms)",
     MinValue = 0,
-    MaxValue = 2,
-    Value = 0.5,
-    Format = "%.2fs",
+    MaxValue = 2000,
+    Value = 500,
+    Format = "%dms",
     Callback = function(_, value)
-        ParryExtender:SetDelay(value)
+        ParryExtender:SetDelay(value / 1000)
     end,
 })
 
