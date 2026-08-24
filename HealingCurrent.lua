@@ -7,6 +7,7 @@ local localPlayer = Players.LocalPlayer
 local enabled = false
 local binding = Enum.KeyCode.Q
 local activating = false
+local activationDelay = 0.05
 
 local function getBinding(input)
     if input.KeyCode ~= Enum.KeyCode.Unknown then
@@ -44,7 +45,7 @@ local function activate()
 
     activating = true
     humanoid:UnequipTools()
-    task.wait()
+    task.wait(activationDelay)
 
     remote:FireServer("Activate", { localPlayer, localPlayer, localPlayer })
     task.wait(0.05)
@@ -68,6 +69,10 @@ function HealingCurrent:SetBinding(input)
 
     binding = newBinding
     return binding.Name
+end
+
+function HealingCurrent:SetDelay(value)
+    activationDelay = math.max(value, 0)
 end
 
 function HealingCurrent:GetBindingName()

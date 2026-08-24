@@ -62,6 +62,17 @@ combatTab:Checkbox({
     end,
 })
 
+combatTab:Slider({
+    Label = "Healing Current Delay",
+    MinValue = 0,
+    MaxValue = 2,
+    Value = 0.05,
+    Format = "%.2fs",
+    Callback = function(_, value)
+        HealingCurrent:SetDelay(value)
+    end,
+})
+
 bindButton = combatTab:Button({
     Label = "",
     Callback = function()
@@ -81,6 +92,17 @@ combatTab:Checkbox({
     Value = false,
     Callback = function(_, enabled)
         ParryExtender:SetEnabled(enabled)
+    end,
+})
+
+combatTab:Slider({
+    Label = "Parry Delay",
+    MinValue = 0,
+    MaxValue = 2,
+    Value = 0.5,
+    Format = "%.2fs",
+    Callback = function(_, value)
+        ParryExtender:SetDelay(value)
     end,
 })
 

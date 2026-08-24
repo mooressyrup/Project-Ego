@@ -3,9 +3,14 @@ local UserInputService = game:GetService("UserInputService")
 
 local ParryExtender = {}
 local enabled = false
+local delay = 0.5
 
 function ParryExtender:SetEnabled(value)
     enabled = value
+end
+
+function ParryExtender:SetDelay(value)
+    delay = math.max(value, 0)
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -13,7 +18,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         return
     end
 
-    task.delay(0.5, function()
+    task.delay(delay, function()
         local actionRemote = RunService:FindFirstChild("ActionMain")
         if actionRemote and actionRemote:IsA("RemoteEvent") then
             actionRemote:FireServer("parry", 72.30637452565134)
