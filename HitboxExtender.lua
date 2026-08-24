@@ -5,18 +5,68 @@ local RunService = game:GetService("RunService")
 
 local HitboxExtender = {}
 local localPlayer = Players.LocalPlayer
-local enabled = false
+local environment = getgenv()
+if environment.HBE == nil then
+    environment.HBE = false
+end
+
+local enabled = environment.HBE == true
 local viewEnabled = false
 local chance = 100
 local hitboxSize = 10
 local whitelistedTeamName = nil
 local originalStates = {}
+local characterContainer
+
+pcall(function()
+    local metatable = getrawmetatable(game)
+    setreadonly(metatable, false)
+
+    local originalIndex = metatable.__index
+    metatable.__index = function(instance, key)
+        if tostring(instance) == "HumanoidRootPart" and tostring(key) == "Size" then
+            return Vector3.new(2, 2, 1)
+        end
+
+        return originalIndex(instance, key)
+    end
+
+    setreadonly(metatable, true)
+end)
+
+local function getCharacter(player)
+    if characterContainer then
+        local character = characterContainer:FindFirstChild(player.Name)
+        if character then
+            return character
+        end
+    end
+
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") then
+        characterContainer = character.Parent
+        return character
+    end
+
+    for _, descendant in workspace:GetDescendants() do
+        if descendant:IsA("Model")
+            and string.find(descendant.Name, player.Name, 1, true)
+            and descendant:FindFirstChild("Humanoid")
+        then
+            characterContainer = descendant.Parent
+            return descendant
+        end
+    end
+end
 
 local function getState(part)
     local state = originalStates[part]
     if not state then
         state = {
             size = part.Size,
+            color = part.Color,
+            canCollide = part.CanCollide,
+            transparency = part.Transparency,
             expanded = false,
         }
         originalStates[part] = state
@@ -32,7 +82,7 @@ local function isWhitelisted(player)
 end
 
 local function updateViewer(part, state)
-    if not viewEnabled then
+    if not viewEnabled or not state.expanded then
         if state.viewer then
             state.viewer:Destroy()
             state.viewer = nil
@@ -52,13 +102,16 @@ local function updateViewer(part, state)
         state.viewer = viewer
     end
 
-    viewer.Size = state.expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
-    viewer.Color3 = state.expanded and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(255, 255, 255)
+    viewer.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+    viewer.Color3 = Color3.fromRGB(255, 0, 0)
 end
 
 local function resetHitbox(part, state)
     state.expanded = false
     part.Size = state.size
+    part.Color = state.color
+    part.CanCollide = state.canCollide
+    part.Transparency = state.transparency
 
     if state.viewer then
         state.viewer:Destroy()
@@ -69,9 +122,8 @@ end
 local function restoreHitboxes()
     for part, state in pairs(originalStates) do
         if part.Parent then
-            part.Size = state.size
-        end
-        if state.viewer then
+            resetHitbox(part, state)
+        elseif state.viewer then
             state.viewer:Destroy()
         end
     end
@@ -91,9 +143,8 @@ RunService.Heartbeat:Connect(function()
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
         if not humanoid or humanoid.Health <= 0 then
             if part.Parent then
-                part.Size = state.size
-            end
-            if state.viewer then
+                resetHitbox(part, state)
+            elseif state.viewer then
                 state.viewer:Destroy()
             end
             originalStates[part] = nil
@@ -107,53 +158,68 @@ local function updateHitboxes(expanded)
             continue
         end
 
-        local character = player.Character
+        local character = getCharacter(player)
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
         if not rootPart or not rootPart:IsA("BasePart") then
             continue
         end
 
-        if isWhitelisted(player) then
-            local state = originalStates[rootPart]
+        local state = originalStates[rootPart]
+        if isWhitelisted(player) or not expanded then
             if state then
                 resetHitbox(rootPart, state)
             end
             continue
         end
 
-        local state = getState(rootPart)
-        state.expanded = expanded
-        rootPart.Size = expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
+        state = getState(rootPart)
+        state.expanded = true
+        rootPart.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+        rootPart.Color = Color3.fromRGB(255, 0, 0)
+        rootPart.CanCollide = false
+        rootPart.Transparency = 0.5
         updateViewer(rootPart, state)
     end
 end
 
 local function refreshHitboxes()
+    if not enabled then
+        return
+    end
+
     for _, player in Players:GetPlayers() do
         if player == localPlayer then
             continue
         end
 
-        local character = player.Character
+        local character = getCharacter(player)
         local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-        if rootPart and rootPart:IsA("BasePart") then
-            if isWhitelisted(player) then
-                local state = originalStates[rootPart]
-                if state then
-                    resetHitbox(rootPart, state)
-                end
-                continue
-            end
-
-            local state = getState(rootPart)
-            rootPart.Size = state.expanded and Vector3.new(hitboxSize, hitboxSize, hitboxSize) or state.size
+        local state = rootPart and originalStates[rootPart]
+        if rootPart and state and isWhitelisted(player) then
+            resetHitbox(rootPart, state)
+        elseif rootPart and state and state.expanded then
+            rootPart.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+            rootPart.Color = Color3.fromRGB(255, 0, 0)
+            rootPart.CanCollide = false
+            rootPart.Transparency = 0.5
             updateViewer(rootPart, state)
         end
     end
 end
 
+RunService.RenderStepped:Connect(function()
+    if environment.HBE then
+        enabled = true
+        refreshHitboxes()
+    elseif enabled then
+        enabled = false
+        restoreHitboxes()
+    end
+end)
+
 function HitboxExtender:SetEnabled(value)
     enabled = value
+    environment.HBE = value
 
     if not enabled then
         restoreHitboxes()
@@ -166,24 +232,30 @@ end
 
 function HitboxExtender:SetViewEnabled(value)
     viewEnabled = value
-    refreshHitboxes()
+
+    if environment.HBE then
+        refreshHitboxes()
+    end
 end
 
 function HitboxExtender:SetSize(value)
     hitboxSize = math.max(math.round(value), 1)
 
-    if enabled then
+    if environment.HBE then
         refreshHitboxes()
     end
 end
 
 function HitboxExtender:SetWhitelistedTeam(teamName)
     whitelistedTeamName = teamName
-    refreshHitboxes()
+
+    if environment.HBE then
+        refreshHitboxes()
+    end
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed or not enabled or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+    if gameProcessed or not environment.HBE or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
         return
     end
 
