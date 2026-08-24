@@ -14,5 +14,6 @@ loadstring(game:HttpGet(
 - `PassiveKarma.lua`: Passive Karma feature
 - `HealingCurrent.lua`: Healing Current hotkey
 - `ParryExtender.lua`: delayed parry hotkey
+- `Nametags.lua`: RankTag visibility control
 
 Press `F2` to show or hide the GUI.

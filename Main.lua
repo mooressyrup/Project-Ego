@@ -11,6 +11,16 @@ local function loadModule(path)
     return moduleOrError
 end
 
+local settings = getgenv().ProjectEgoSettings
+if type(settings) ~= "table" then
+    settings = {}
+    getgenv().ProjectEgoSettings = settings
+end
+
+local healingDelay = math.clamp(tonumber(settings.HealingCurrentDelay) or 50, 0, 2000)
+local parryBeforeDelay = math.clamp(tonumber(settings.ParryBeforeDelay) or 0, 0, 2000)
+local parryAfterDelay = math.clamp(tonumber(settings.ParryAfterDelay) or 500, 0, 2000)
+
 local ImGui = loadstring(game:HttpGet(
     "https://github.com/depthso/Roblox-ImGUI/raw/main/ImGui.lua"
 ), "ProjectEgo/ImGui")()
@@ -18,6 +28,11 @@ local UserInputService = game:GetService("UserInputService")
 local PassiveKarma = loadModule("PassiveKarma.lua")
 local HealingCurrent = loadModule("HealingCurrent.lua")
 local ParryExtender = loadModule("ParryExtender.lua")
+local Nametags = loadModule("Nametags.lua")
+
+HealingCurrent:SetDelay(healingDelay / 1000)
+ParryExtender:SetBeforeDelay(parryBeforeDelay / 1000)
+ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
 
 local window = ImGui:CreateWindow({
     Title = "Project Ego",
@@ -45,6 +60,14 @@ mainTab:Checkbox({
     end,
 })
 
+mainTab:Checkbox({
+    Label = "Enable Nametags",
+    Value = false,
+    Callback = function(_, enabled)
+        Nametags:SetEnabled(enabled)
+    end,
+})
+
 local function setWidgetLabel(widget, text)
     widget.Text = text
 end
@@ -66,10 +89,12 @@ combatTab:Slider({
     Label = "Healing Current Delay (ms)",
     MinValue = 0,
     MaxValue = 2000,
-    Value = 50,
+    Value = healingDelay,
     Format = "%dms",
     Callback = function(_, value)
-        HealingCurrent:SetDelay(value / 1000)
+        healingDelay = math.clamp(math.round(value), 0, 2000)
+        settings.HealingCurrentDelay = healingDelay
+        HealingCurrent:SetDelay(healingDelay / 1000)
     end,
 })
 
@@ -96,13 +121,28 @@ combatTab:Checkbox({
 })
 
 combatTab:Slider({
-    Label = "Parry Delay (ms)",
+    Label = "Parry Before Delay (ms)",
     MinValue = 0,
     MaxValue = 2000,
-    Value = 500,
+    Value = parryBeforeDelay,
     Format = "%dms",
     Callback = function(_, value)
-        ParryExtender:SetDelay(value / 1000)
+        parryBeforeDelay = math.clamp(math.round(value), 0, 2000)
+        settings.ParryBeforeDelay = parryBeforeDelay
+        ParryExtender:SetBeforeDelay(parryBeforeDelay / 1000)
+    end,
+})
+
+combatTab:Slider({
+    Label = "Parry After Delay (ms)",
+    MinValue = 0,
+    MaxValue = 2000,
+    Value = parryAfterDelay,
+    Format = "%dms",
+    Callback = function(_, value)
+        parryAfterDelay = math.clamp(math.round(value), 0, 2000)
+        settings.ParryAfterDelay = parryAfterDelay
+        ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
     end,
 })
 
