@@ -6,10 +6,24 @@ local enabled = false
 local function enableRankTag(character)
     local head = character and character:FindFirstChild("Head")
     local rankTag = head and head:FindFirstChild("RankTag", true)
-    if rankTag then
-        pcall(function()
-            rankTag.Enabled = true
-        end)
+    if not rankTag or rankTag:FindFirstChild("Username") then
+        return
+    end
+
+    local usernameTag = rankTag:Clone()
+    usernameTag.Name = "Username"
+    usernameTag.Parent = rankTag.Parent
+
+    pcall(function()
+        usernameTag.Enabled = true
+    end)
+end
+
+local function removeUsernameTag(character)
+    local head = character and character:FindFirstChild("Head")
+    local usernameTag = head and head:FindFirstChild("Username", true)
+    if usernameTag then
+        usernameTag:Destroy()
     end
 end
 
@@ -25,6 +39,10 @@ end
 function Nametags:SetEnabled(value)
     enabled = value
     if not enabled then
+        for _, player in Players:GetPlayers() do
+            removeUsernameTag(player.Character)
+        end
+
         return
     end
 

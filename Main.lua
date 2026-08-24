@@ -20,6 +20,8 @@ end
 local healingDelay = math.clamp(tonumber(settings.HealingCurrentDelay) or 50, 0, 2000)
 local parryBeforeDelay = math.clamp(tonumber(settings.ParryBeforeDelay) or 0, 0, 2000)
 local parryAfterDelay = math.clamp(tonumber(settings.ParryAfterDelay) or 500, 0, 2000)
+local parryDodgeEnabled = settings.ParryDodgeEnabled == true
+local parryDodgeDelay = math.clamp(tonumber(settings.ParryDodgeDelay) or 500, 0, 2000)
 
 local ImGui = loadstring(game:HttpGet(
     "https://github.com/depthso/Roblox-ImGUI/raw/main/ImGui.lua"
@@ -33,6 +35,8 @@ local Nametags = loadModule("Nametags.lua")
 HealingCurrent:SetDelay(healingDelay / 1000)
 ParryExtender:SetBeforeDelay(parryBeforeDelay / 1000)
 ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
+ParryExtender:SetDodgeEnabled(parryDodgeEnabled)
+ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
 
 local window = ImGui:CreateWindow({
     Title = "Project Ego",
@@ -143,6 +147,29 @@ combatTab:Slider({
         parryAfterDelay = math.clamp(math.round(value), 0, 2000)
         settings.ParryAfterDelay = parryAfterDelay
         ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
+    end,
+})
+
+combatTab:Checkbox({
+    Label = "Dodge After Parry",
+    Value = parryDodgeEnabled,
+    Callback = function(_, enabled)
+        parryDodgeEnabled = enabled
+        settings.ParryDodgeEnabled = enabled
+        ParryExtender:SetDodgeEnabled(enabled)
+    end,
+})
+
+combatTab:Slider({
+    Label = "Dodge After Parry Delay (ms)",
+    MinValue = 0,
+    MaxValue = 2000,
+    Value = parryDodgeDelay,
+    Format = "%dms",
+    Callback = function(_, value)
+        parryDodgeDelay = math.clamp(math.round(value), 0, 2000)
+        settings.ParryDodgeDelay = parryDodgeDelay
+        ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
     end,
 })
 
