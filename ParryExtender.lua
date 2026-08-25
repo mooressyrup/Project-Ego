@@ -1,5 +1,6 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
 
 local ParryExtender = {}
 local enabled = false
@@ -28,7 +29,16 @@ function ParryExtender:SetDodgeDelay(value)
     dodgeDelay = math.max(value, 0)
 end
 
+local function hasEquippedTool()
+    local character = Players.LocalPlayer.Character
+    return character and character:FindFirstChildOfClass("Tool") ~= nil
+end
+
 local function fireAction(action, ...)
+    if not hasEquippedTool() then
+        return
+    end
+
     local actionRemote = RunService:FindFirstChild("ActionMain")
     if actionRemote and actionRemote:IsA("RemoteEvent") then
         actionRemote:FireServer(action, ...)
@@ -40,7 +50,7 @@ local function fireParry()
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed or not enabled or input.KeyCode ~= Enum.KeyCode.F then
+    if gameProcessed or not enabled or not hasEquippedTool() or input.KeyCode ~= Enum.KeyCode.F then
         return
     end
 
