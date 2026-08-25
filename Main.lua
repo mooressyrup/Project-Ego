@@ -76,6 +76,7 @@ local HealingCurrent = loadModule("HealingCurrent.lua")
 local ParryExtender = loadModule("ParryExtender.lua")
 local Nametags = loadModule("Nametags.lua")
 local Experiments = loadModule("Experiments.lua")
+local HolyBeam = loadModule("HolyBeam.lua")
 
 HealingCurrent:SetDelay(healingDelay / 1000)
 HealingCurrent:SetEnabled(healingCurrentEnabled)
@@ -93,6 +94,13 @@ local healingCurrentBinding = type(savedBinding) == "string"
     and (Enum.KeyCode[savedBinding] or Enum.UserInputType[savedBinding])
 if healingCurrentBinding then
     HealingCurrent:SetBinding(healingCurrentBinding)
+end
+
+local savedHolyBeamBinding = settings.HolyBeamBinding
+local holyBeamBinding = type(savedHolyBeamBinding) == "string"
+    and (Enum.KeyCode[savedHolyBeamBinding] or Enum.UserInputType[savedHolyBeamBinding])
+if holyBeamBinding then
+    HolyBeam:SetBinding(holyBeamBinding)
 end
 
 local window = ImGui:CreateWindow({
@@ -225,6 +233,29 @@ bindButton = combatTab:Button({
 })
 updateBindButton()
 
+local holyBeamBindButton
+local function updateHolyBeamBindButton()
+    setWidgetLabel(holyBeamBindButton, "Bind Holy Beam (" .. HolyBeam:GetBindingName() .. ")")
+end
+
+holyBeamBindButton = combatTab:Button({
+    Label = "",
+    Callback = function()
+        setWidgetLabel(holyBeamBindButton, "Press a key or mouse button...")
+
+        task.spawn(function()
+            local input = UserInputService.InputBegan:Wait()
+            local bindingName = HolyBeam:SetBinding(input)
+            if bindingName then
+                settings.HolyBeamBinding = bindingName
+                saveSettings()
+                updateHolyBeamBindButton()
+            end
+        end)
+    end,
+})
+updateHolyBeamBindButton()
+
 combatTab:Checkbox({
     Label = "Enable Parry Extender",
     Value = parryExtenderEnabled,
@@ -305,6 +336,7 @@ miscellaneousTab:Button({
         ParryExtender:SetDodgeEnabled(false)
         Nametags:SetEnabled(false)
         Experiments:SetEnabled(false)
+        HolyBeam:SetEnabled(false)
 
         if visibilityConnection then
             visibilityConnection:Disconnect()
