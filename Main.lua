@@ -76,8 +76,6 @@ local HealingCurrent = loadModule("HealingCurrent.lua")
 local ParryExtender = loadModule("ParryExtender.lua")
 local Nametags = loadModule("Nametags.lua")
 local Experiments = loadModule("Experiments.lua")
-local HadesDash = loadModule("HadesDash.lua")
-local HealingCurrentSignal = loadModule("HealingCurrentSignal.lua")
 
 HealingCurrent:SetDelay(healingDelay / 1000)
 HealingCurrent:SetEnabled(healingCurrentEnabled)
@@ -95,20 +93,6 @@ local healingCurrentBinding = type(savedBinding) == "string"
     and (Enum.KeyCode[savedBinding] or Enum.UserInputType[savedBinding])
 if healingCurrentBinding then
     HealingCurrent:SetBinding(healingCurrentBinding)
-end
-
-local savedHadesDashBinding = settings.HadesDashBinding
-local hadesDashBinding = type(savedHadesDashBinding) == "string"
-    and (Enum.KeyCode[savedHadesDashBinding] or Enum.UserInputType[savedHadesDashBinding])
-if hadesDashBinding then
-    HadesDash:SetBinding(hadesDashBinding)
-end
-
-local savedHealingCurrentSignalBinding = settings.HealingCurrentSignalBinding
-local healingCurrentSignalBinding = type(savedHealingCurrentSignalBinding) == "string"
-    and (Enum.KeyCode[savedHealingCurrentSignalBinding] or Enum.UserInputType[savedHealingCurrentSignalBinding])
-if healingCurrentSignalBinding then
-    HealingCurrentSignal:SetBinding(healingCurrentSignalBinding)
 end
 
 local window = ImGui:CreateWindow({
@@ -183,52 +167,6 @@ experimentsTab:Checkbox({
         saveSettings()
     end,
 })
-
-local hadesDashBindButton
-local function updateHadesDashBindButton()
-    setWidgetLabel(hadesDashBindButton, "Bind Hades Dash (" .. HadesDash:GetBindingName() .. ")")
-end
-
-hadesDashBindButton = experimentsTab:Button({
-    Label = "",
-    Callback = function()
-        setWidgetLabel(hadesDashBindButton, "Press a key or mouse button...")
-
-        task.spawn(function()
-            local input = UserInputService.InputBegan:Wait()
-            local bindingName = HadesDash:SetBinding(input)
-            if bindingName then
-                settings.HadesDashBinding = bindingName
-                saveSettings()
-                updateHadesDashBindButton()
-            end
-        end)
-    end,
-})
-updateHadesDashBindButton()
-
-local healingCurrentSignalBindButton
-local function updateHealingCurrentSignalBindButton()
-    setWidgetLabel(healingCurrentSignalBindButton, "Bind Healing Current (" .. HealingCurrentSignal:GetBindingName() .. ")")
-end
-
-healingCurrentSignalBindButton = experimentsTab:Button({
-    Label = "",
-    Callback = function()
-        setWidgetLabel(healingCurrentSignalBindButton, "Press a key or mouse button...")
-
-        task.spawn(function()
-            local input = UserInputService.InputBegan:Wait()
-            local bindingName = HealingCurrentSignal:SetBinding(input)
-            if bindingName then
-                settings.HealingCurrentSignalBinding = bindingName
-                saveSettings()
-                updateHealingCurrentSignalBindButton()
-            end
-        end)
-    end,
-})
-updateHealingCurrentSignalBindButton()
 
 mainTab:Checkbox({
     Label = "Enable Nametags",
@@ -367,8 +305,6 @@ miscellaneousTab:Button({
         ParryExtender:SetDodgeEnabled(false)
         Nametags:SetEnabled(false)
         Experiments:SetEnabled(false)
-        HadesDash:SetEnabled(false)
-        HealingCurrentSignal:SetEnabled(false)
 
         if visibilityConnection then
             visibilityConnection:Disconnect()
