@@ -59,7 +59,6 @@ local passiveKarmaEnabled = settings.PassiveKarmaEnabled == true
 local nametagsEnabled = settings.NametagsEnabled == true
 local healingCurrentEnabled = settings.HealingCurrentEnabled == true
 local parryExtenderEnabled = settings.ParryExtenderEnabled == true
-local experimentsEnabled = settings.ExperimentsEnabled == true
 
 local ImGui = loadstring(game:HttpGet(
     "https://github.com/depthso/Roblox-ImGUI/raw/main/ImGui.lua"
@@ -69,7 +68,6 @@ local PassiveKarma = loadModule("PassiveKarma.lua")
 local HealingCurrent = loadModule("HealingCurrent.lua")
 local ParryExtender = loadModule("ParryExtender.lua")
 local Nametags = loadModule("Nametags.lua")
-local Experiments = loadModule("Experiments.lua")
 
 HealingCurrent:SetDelay(healingDelay / 1000)
 HealingCurrent:SetEnabled(healingCurrentEnabled)
@@ -80,7 +78,6 @@ ParryExtender:SetDodgeEnabled(parryDodgeEnabled)
 ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
 PassiveKarma:SetEnabled(passiveKarmaEnabled)
 Nametags:SetEnabled(nametagsEnabled)
-Experiments:SetEnabled(experimentsEnabled)
 
 local savedBinding = settings.HealingCurrentBinding
 local healingCurrentBinding = type(savedBinding) == "string"
@@ -103,10 +100,6 @@ local combatTab = window:CreateTab({
     Name = "Combat",
 })
 
-local experimentsTab = window:CreateTab({
-    Name = "Experiments",
-})
-
 local miscellaneousTab = window:CreateTab({
     Name = "Miscellaneous",
 })
@@ -123,20 +116,6 @@ mainTab:Checkbox({
         settings.PassiveKarmaEnabled = enabled
         saveSettings()
     end,
-})
-
-experimentsTab:Checkbox({
-    Label = "BookCD Karma",
-    Value = experimentsEnabled,
-    Callback = function(_, enabled)
-        Experiments:SetEnabled(enabled)
-        settings.ExperimentsEnabled = enabled
-        saveSettings()
-    end,
-})
-
-experimentsTab:Label({
-    Text = "Sets CurrentArea to The Library while enabled.",
 })
 
 mainTab:Checkbox({
@@ -267,7 +246,7 @@ local terminated = false
 local visibilityConnection
 
 miscellaneousTab:Button({
-    Label = "Terminate",
+    Text = "Terminate",
     Callback = function()
         if terminated then
             return
@@ -279,7 +258,6 @@ miscellaneousTab:Button({
         ParryExtender:SetEnabled(false)
         ParryExtender:SetDodgeEnabled(false)
         Nametags:SetEnabled(false)
-        Experiments:SetEnabled(false)
 
         if visibilityConnection then
             visibilityConnection:Disconnect()
