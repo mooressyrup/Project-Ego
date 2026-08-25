@@ -138,7 +138,7 @@ mainTab:Label({
 })
 
 local function setWidgetLabel(widget, text)
-    widget.Text = text
+    widget:SetLabel(text)
 end
 
 local passiveKarmaCheckbox = mainTab:Checkbox({
@@ -176,7 +176,7 @@ local function updateHadesDashBindButton()
 end
 
 hadesDashBindButton = experimentsTab:Button({
-    Text = "",
+    Label = "",
     Callback = function()
         setWidgetLabel(hadesDashBindButton, "Press a key or mouse button...")
 
@@ -199,7 +199,7 @@ local function updateHealingCurrentSignalBindButton()
 end
 
 healingCurrentSignalBindButton = experimentsTab:Button({
-    Text = "",
+    Label = "",
     Callback = function()
         setWidgetLabel(healingCurrentSignalBindButton, "Press a key or mouse button...")
 
@@ -340,7 +340,7 @@ local terminated = false
 local visibilityConnection
 
 miscellaneousTab:Button({
-    Text = "Terminate",
+    Label = "Terminate",
     Callback = function()
         if terminated then
             return
