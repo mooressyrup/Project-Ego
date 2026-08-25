@@ -1,4 +1,7 @@
 local BASE_URL = "https://raw.githubusercontent.com/mooressyrup/Project-Ego/main/"
+local SETTINGS_FOLDER = "ProjectEgo"
+local SETTINGS_FILE = SETTINGS_FOLDER .. "/settings.json"
+local HttpService = game:GetService("HttpService")
 
 local function loadModule(path)
     local source = game:HttpGet(BASE_URL .. path)
@@ -11,20 +14,77 @@ local function loadModule(path)
     return moduleOrError
 end
 
+local settings = {}
+local loaded, savedSettings = pcall(function()
+    if not isfile(SETTINGS_FILE) then
+        return nil
+    end
+
+    return HttpService:JSONDecode(readfile(SETTINGS_FILE))
+end)
+
+if loaded and type(savedSettings) == "table" then
+    settings = savedSettings
+end
+
+getgenv().ProjectEgoSettings = settings
+
+local function saveSettings()
+    local encoded, json = pcall(function()
+        return HttpService:JSONEncode(settings)
+    end)
+    if not encoded then
+        warn("[Project Ego] Could not encode settings: " .. tostring(json))
+        return
+    end
+
+    local written, writeError = pcall(function()
+        if not isfolder(SETTINGS_FOLDER) then
+            makefolder(SETTINGS_FOLDER)
+        end
+
+        writefile(SETTINGS_FILE, json)
+    end)
+    if not written then
+        warn("[Project Ego] Could not save settings: " .. tostring(writeError))
+    end
+end
+
+local healingDelay = math.clamp(tonumber(settings.HealingCurrentDelay) or 50, 0, 2000)
+local parryBeforeDelay = math.clamp(tonumber(settings.ParryBeforeDelay) or 0, 0, 2000)
+local parryAfterDelay = math.clamp(tonumber(settings.ParryAfterDelay) or 500, 0, 2000)
+local parryDodgeEnabled = settings.ParryDodgeEnabled == true
+local parryDodgeDelay = math.clamp(tonumber(settings.ParryDodgeDelay) or 500, 0, 2000)
+local passiveKarmaEnabled = settings.PassiveKarmaEnabled == true
+local nametagsEnabled = settings.NametagsEnabled == true
+local healingCurrentEnabled = settings.HealingCurrentEnabled == true
+local parryExtenderEnabled = settings.ParryExtenderEnabled == true
+
 local ImGui = loadstring(game:HttpGet(
     "https://github.com/depthso/Roblox-ImGUI/raw/main/ImGui.lua"
 ), "ProjectEgo/ImGui")()
 local UserInputService = game:GetService("UserInputService")
-local Teams = game:GetService("Teams")
 local PassiveKarma = loadModule("PassiveKarma.lua")
-local HitboxExtender = loadModule("HitboxExtender.lua")
-local Keybinds = loadModule("Keybinds.lua")
+local HealingCurrent = loadModule("HealingCurrent.lua")
+local ParryExtender = loadModule("ParryExtender.lua")
+local Nametags = loadModule("Nametags.lua")
 
-local teamNames = { "None" }
-for _, team in Teams:GetTeams() do
-    table.insert(teamNames, team.Name)
+HealingCurrent:SetDelay(healingDelay / 1000)
+HealingCurrent:SetEnabled(healingCurrentEnabled)
+ParryExtender:SetBeforeDelay(parryBeforeDelay / 1000)
+ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
+ParryExtender:SetEnabled(parryExtenderEnabled)
+ParryExtender:SetDodgeEnabled(parryDodgeEnabled)
+ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
+PassiveKarma:SetEnabled(passiveKarmaEnabled)
+Nametags:SetEnabled(nametagsEnabled)
+
+local savedBinding = settings.HealingCurrentBinding
+local healingCurrentBinding = type(savedBinding) == "string"
+    and (Enum.KeyCode[savedBinding] or Enum.UserInputType[savedBinding])
+if healingCurrentBinding then
+    HealingCurrent:SetBinding(healingCurrentBinding)
 end
-table.sort(teamNames)
 
 local window = ImGui:CreateWindow({
     Title = "Project Ego",
@@ -40,118 +100,143 @@ local combatTab = window:CreateTab({
     Name = "Combat",
 })
 
-local keybindsTab = window:CreateTab({
-    Name = "Keybinds",
-})
-
 mainTab:Label({
     Text = "Project Ego loaded.",
 })
 
 mainTab:Checkbox({
     Label = "Passive Karma",
-    Value = false,
+    Value = passiveKarmaEnabled,
     Callback = function(_, enabled)
         PassiveKarma:SetEnabled(enabled)
+        settings.PassiveKarmaEnabled = enabled
+        saveSettings()
     end,
 })
 
-combatTab:Checkbox({
-    Label = "M1 Hitbox",
-    Value = false,
+mainTab:Checkbox({
+    Label = "Enable Nametags",
+    Value = nametagsEnabled,
     Callback = function(_, enabled)
-        HitboxExtender:SetEnabled(enabled)
+        Nametags:SetEnabled(enabled)
+        settings.NametagsEnabled = enabled
+        saveSettings()
     end,
 })
 
-combatTab:Checkbox({
-    Label = "View Hitboxes",
-    Value = false,
-    Callback = function(_, enabled)
-        HitboxExtender:SetViewEnabled(enabled)
-    end,
-})
-
-combatTab:Slider({
-    Label = "Hit Chance",
-    MinValue = 0,
-    MaxValue = 100,
-    Value = 100,
-    Format = "%d%%",
-    Callback = function(_, value)
-        HitboxExtender:SetChance(value)
-    end,
-})
-
-combatTab:Slider({
-    Label = "Hitbox Size",
-    MinValue = 1,
-    MaxValue = 50,
-    Value = 10,
-    Format = "%d",
-    Callback = function(_, value)
-        HitboxExtender:SetSize(value)
-    end,
-})
-
-combatTab:Combo({
-    Label = "Hitbox Whitelist",
-    Items = teamNames,
-    Selected = "None",
-    Callback = function(_, teamName)
-        HitboxExtender:SetWhitelistedTeam(teamName == "None" and nil or teamName)
-    end,
-})
-
-local selectedSlot = 1
 local function setWidgetLabel(widget, text)
     widget.Text = text
 end
 
 local bindButton
 local function updateBindButton()
-    setWidgetLabel(bindButton, ("Bind Slot %d (%s)"):format(
-        selectedSlot,
-        Keybinds:GetBindingName(selectedSlot)
-    ))
+    setWidgetLabel(bindButton, "Bind Healing Current (" .. HealingCurrent:GetBindingName() .. ")")
 end
 
-keybindsTab:Slider({
-    Label = "Hotbar Slot",
-    MinValue = 1,
-    MaxValue = 10,
-    Value = selectedSlot,
-    Format = "%d",
-    Callback = function(_, value)
-        selectedSlot = math.round(value)
-        if bindButton then
-            updateBindButton()
-        end
+combatTab:Checkbox({
+    Label = "Enable Healing Current",
+    Value = healingCurrentEnabled,
+    Callback = function(_, enabled)
+        HealingCurrent:SetEnabled(enabled)
+        settings.HealingCurrentEnabled = enabled
+        saveSettings()
     end,
 })
 
-bindButton = keybindsTab:Button({
+combatTab:Slider({
+    Label = "Healing Current Delay (ms)",
+    MinValue = 0,
+    MaxValue = 2000,
+    Value = healingDelay,
+    Format = "%dms",
+    Callback = function(_, value)
+        healingDelay = math.clamp(math.round(value), 0, 2000)
+        settings.HealingCurrentDelay = healingDelay
+        HealingCurrent:SetDelay(healingDelay / 1000)
+        saveSettings()
+    end,
+})
+
+bindButton = combatTab:Button({
     Label = "",
     Callback = function()
         setWidgetLabel(bindButton, "Press a key or mouse button...")
 
         task.spawn(function()
             local input = UserInputService.InputBegan:Wait()
-            Keybinds:SetBinding(selectedSlot, input)
-            updateBindButton()
+            local bindingName = HealingCurrent:SetBinding(input)
+            if bindingName then
+                settings.HealingCurrentBinding = bindingName
+                saveSettings()
+                updateBindButton()
+            end
         end)
     end,
 })
 updateBindButton()
 
-local clearBindButton = keybindsTab:Button({
-    Label = "",
-    Callback = function()
-        Keybinds:ClearBinding(selectedSlot)
-        updateBindButton()
+combatTab:Checkbox({
+    Label = "Enable Parry Extender",
+    Value = parryExtenderEnabled,
+    Callback = function(_, enabled)
+        ParryExtender:SetEnabled(enabled)
+        settings.ParryExtenderEnabled = enabled
+        saveSettings()
     end,
 })
-setWidgetLabel(clearBindButton, "Clear Selected Binding")
+
+combatTab:Slider({
+    Label = "Parry Before Delay (ms)",
+    MinValue = 0,
+    MaxValue = 2000,
+    Value = parryBeforeDelay,
+    Format = "%dms",
+    Callback = function(_, value)
+        parryBeforeDelay = math.clamp(math.round(value), 0, 2000)
+        settings.ParryBeforeDelay = parryBeforeDelay
+        ParryExtender:SetBeforeDelay(parryBeforeDelay / 1000)
+        saveSettings()
+    end,
+})
+
+combatTab:Slider({
+    Label = "Parry After Delay (ms)",
+    MinValue = 0,
+    MaxValue = 2000,
+    Value = parryAfterDelay,
+    Format = "%dms",
+    Callback = function(_, value)
+        parryAfterDelay = math.clamp(math.round(value), 0, 2000)
+        settings.ParryAfterDelay = parryAfterDelay
+        ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
+        saveSettings()
+    end,
+})
+
+combatTab:Checkbox({
+    Label = "Dodge After Parry",
+    Value = parryDodgeEnabled,
+    Callback = function(_, enabled)
+        parryDodgeEnabled = enabled
+        settings.ParryDodgeEnabled = enabled
+        ParryExtender:SetDodgeEnabled(enabled)
+        saveSettings()
+    end,
+})
+
+combatTab:Slider({
+    Label = "Dodge After Parry Delay (ms)",
+    MinValue = 0,
+    MaxValue = 2000,
+    Value = parryDodgeDelay,
+    Format = "%dms",
+    Callback = function(_, value)
+        parryDodgeDelay = math.clamp(math.round(value), 0, 2000)
+        settings.ParryDodgeDelay = parryDodgeDelay
+        ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
+        saveSettings()
+    end,
+})
 
 mainTab:Button({
     Text = "Test",

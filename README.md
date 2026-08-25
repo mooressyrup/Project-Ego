@@ -12,6 +12,8 @@ loadstring(game:HttpGet(
 
 - `Main.lua`: entry point and GUI
 - `PassiveKarma.lua`: Passive Karma feature
-- `HitboxExtender.lua`: M1 hitbox controls
+- `HealingCurrent.lua`: Healing Current hotkey
+- `ParryExtender.lua`: delayed parry hotkey
+- `Nametags.lua`: RankTag visibility control
 
 Press `F2` to show or hide the GUI.
