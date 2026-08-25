@@ -1,4 +1,7 @@
 local BASE_URL = "https://raw.githubusercontent.com/mooressyrup/Project-Ego/main/"
+local SETTINGS_FOLDER = "ProjectEgo"
+local SETTINGS_FILE = SETTINGS_FOLDER .. "/settings.json"
+local HttpService = game:GetService("HttpService")
 
 local function loadModule(path)
     local source = game:HttpGet(BASE_URL .. path)
@@ -11,10 +14,40 @@ local function loadModule(path)
     return moduleOrError
 end
 
-local settings = getgenv().ProjectEgoSettings
-if type(settings) ~= "table" then
-    settings = {}
-    getgenv().ProjectEgoSettings = settings
+local settings = {}
+local loaded, savedSettings = pcall(function()
+    if not isfile(SETTINGS_FILE) then
+        return nil
+    end
+
+    return HttpService:JSONDecode(readfile(SETTINGS_FILE))
+end)
+
+if loaded and type(savedSettings) == "table" then
+    settings = savedSettings
+end
+
+getgenv().ProjectEgoSettings = settings
+
+local function saveSettings()
+    local encoded, json = pcall(function()
+        return HttpService:JSONEncode(settings)
+    end)
+    if not encoded then
+        warn("[Project Ego] Could not encode settings: " .. tostring(json))
+        return
+    end
+
+    local written, writeError = pcall(function()
+        if not isfolder(SETTINGS_FOLDER) then
+            makefolder(SETTINGS_FOLDER)
+        end
+
+        writefile(SETTINGS_FILE, json)
+    end)
+    if not written then
+        warn("[Project Ego] Could not save settings: " .. tostring(writeError))
+    end
 end
 
 local healingDelay = math.clamp(tonumber(settings.HealingCurrentDelay) or 50, 0, 2000)
@@ -22,6 +55,10 @@ local parryBeforeDelay = math.clamp(tonumber(settings.ParryBeforeDelay) or 0, 0,
 local parryAfterDelay = math.clamp(tonumber(settings.ParryAfterDelay) or 500, 0, 2000)
 local parryDodgeEnabled = settings.ParryDodgeEnabled == true
 local parryDodgeDelay = math.clamp(tonumber(settings.ParryDodgeDelay) or 500, 0, 2000)
+local passiveKarmaEnabled = settings.PassiveKarmaEnabled == true
+local nametagsEnabled = settings.NametagsEnabled == true
+local healingCurrentEnabled = settings.HealingCurrentEnabled == true
+local parryExtenderEnabled = settings.ParryExtenderEnabled == true
 
 local ImGui = loadstring(game:HttpGet(
     "https://github.com/depthso/Roblox-ImGUI/raw/main/ImGui.lua"
@@ -33,10 +70,21 @@ local ParryExtender = loadModule("ParryExtender.lua")
 local Nametags = loadModule("Nametags.lua")
 
 HealingCurrent:SetDelay(healingDelay / 1000)
+HealingCurrent:SetEnabled(healingCurrentEnabled)
 ParryExtender:SetBeforeDelay(parryBeforeDelay / 1000)
 ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
+ParryExtender:SetEnabled(parryExtenderEnabled)
 ParryExtender:SetDodgeEnabled(parryDodgeEnabled)
 ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
+PassiveKarma:SetEnabled(passiveKarmaEnabled)
+Nametags:SetEnabled(nametagsEnabled)
+
+local savedBinding = settings.HealingCurrentBinding
+local healingCurrentBinding = type(savedBinding) == "string"
+    and (Enum.KeyCode[savedBinding] or Enum.UserInputType[savedBinding])
+if healingCurrentBinding then
+    HealingCurrent:SetBinding(healingCurrentBinding)
+end
 
 local window = ImGui:CreateWindow({
     Title = "Project Ego",
@@ -58,17 +106,21 @@ mainTab:Label({
 
 mainTab:Checkbox({
     Label = "Passive Karma",
-    Value = false,
+    Value = passiveKarmaEnabled,
     Callback = function(_, enabled)
         PassiveKarma:SetEnabled(enabled)
+        settings.PassiveKarmaEnabled = enabled
+        saveSettings()
     end,
 })
 
 mainTab:Checkbox({
     Label = "Enable Nametags",
-    Value = false,
+    Value = nametagsEnabled,
     Callback = function(_, enabled)
         Nametags:SetEnabled(enabled)
+        settings.NametagsEnabled = enabled
+        saveSettings()
     end,
 })
 
@@ -83,9 +135,11 @@ end
 
 combatTab:Checkbox({
     Label = "Enable Healing Current",
-    Value = false,
+    Value = healingCurrentEnabled,
     Callback = function(_, enabled)
         HealingCurrent:SetEnabled(enabled)
+        settings.HealingCurrentEnabled = enabled
+        saveSettings()
     end,
 })
 
@@ -99,6 +153,7 @@ combatTab:Slider({
         healingDelay = math.clamp(math.round(value), 0, 2000)
         settings.HealingCurrentDelay = healingDelay
         HealingCurrent:SetDelay(healingDelay / 1000)
+        saveSettings()
     end,
 })
 
@@ -109,8 +164,12 @@ bindButton = combatTab:Button({
 
         task.spawn(function()
             local input = UserInputService.InputBegan:Wait()
-            HealingCurrent:SetBinding(input)
-            updateBindButton()
+            local bindingName = HealingCurrent:SetBinding(input)
+            if bindingName then
+                settings.HealingCurrentBinding = bindingName
+                saveSettings()
+                updateBindButton()
+            end
         end)
     end,
 })
@@ -118,9 +177,11 @@ updateBindButton()
 
 combatTab:Checkbox({
     Label = "Enable Parry Extender",
-    Value = false,
+    Value = parryExtenderEnabled,
     Callback = function(_, enabled)
         ParryExtender:SetEnabled(enabled)
+        settings.ParryExtenderEnabled = enabled
+        saveSettings()
     end,
 })
 
@@ -134,6 +195,7 @@ combatTab:Slider({
         parryBeforeDelay = math.clamp(math.round(value), 0, 2000)
         settings.ParryBeforeDelay = parryBeforeDelay
         ParryExtender:SetBeforeDelay(parryBeforeDelay / 1000)
+        saveSettings()
     end,
 })
 
@@ -147,6 +209,7 @@ combatTab:Slider({
         parryAfterDelay = math.clamp(math.round(value), 0, 2000)
         settings.ParryAfterDelay = parryAfterDelay
         ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
+        saveSettings()
     end,
 })
 
@@ -157,6 +220,7 @@ combatTab:Checkbox({
         parryDodgeEnabled = enabled
         settings.ParryDodgeEnabled = enabled
         ParryExtender:SetDodgeEnabled(enabled)
+        saveSettings()
     end,
 })
 
@@ -170,6 +234,7 @@ combatTab:Slider({
         parryDodgeDelay = math.clamp(math.round(value), 0, 2000)
         settings.ParryDodgeDelay = parryDodgeDelay
         ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
+        saveSettings()
     end,
 })
 

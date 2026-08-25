@@ -62,7 +62,7 @@ function HealingCurrent:SetEnabled(value)
 end
 
 function HealingCurrent:SetBinding(input)
-    local newBinding = getBinding(input)
+    local newBinding = typeof(input) == "EnumItem" and input or getBinding(input)
     if not newBinding then
         return nil
     end
