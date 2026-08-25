@@ -138,7 +138,21 @@ mainTab:Label({
 })
 
 local function setWidgetLabel(widget, text)
-    widget:SetLabel(text)
+    local foundLabel, label = pcall(function()
+        return widget:FindFirstChild("Label", true)
+    end)
+    if foundLabel and label then
+        local updated = pcall(function()
+            label.Text = text
+        end)
+        if updated then
+            return
+        end
+    end
+
+    pcall(function()
+        widget.Text = text
+    end)
 end
 
 local passiveKarmaCheckbox = mainTab:Checkbox({
