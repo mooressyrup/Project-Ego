@@ -17,3 +17,5 @@ loadstring(game:HttpGet(
 - `Nametags.lua`: RankTag visibility control
 
 Press `F2` to show or hide the GUI.
+
+Syrup Studios
