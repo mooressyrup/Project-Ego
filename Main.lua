@@ -55,12 +55,20 @@ local parryBeforeDelay = math.clamp(tonumber(settings.ParryBeforeDelay) or 0, 0,
 local parryAfterDelay = math.clamp(tonumber(settings.ParryAfterDelay) or 500, 0, 2000)
 local parryDodgeEnabled = settings.ParryDodgeEnabled == true
 local parryDodgeDelay = math.clamp(tonumber(settings.ParryDodgeDelay) or 500, 0, 2000)
+local parryTestingEnabled = settings.ParryTestingEnabled == true
+local parryTestingBeforeDelay = math.clamp(tonumber(settings.ParryTestingBeforeDelay) or 0, 0, 2000)
 local passiveKarmaEnabled = settings.PassiveKarmaEnabled == true
 local nametagsEnabled = settings.NametagsEnabled == true
 local healingCurrentEnabled = settings.HealingCurrentEnabled == true
 local parryExtenderEnabled = settings.ParryExtenderEnabled == true
 local experimentsEnabled = settings.ExperimentsEnabled == true
 local holySlashesEnabled = settings.HolySlashesEnabled == true
+
+if parryTestingEnabled and parryExtenderEnabled then
+    parryExtenderEnabled = false
+    settings.ParryExtenderEnabled = false
+    saveSettings()
+end
 
 if experimentsEnabled then
     passiveKarmaEnabled = false
@@ -75,6 +83,7 @@ local UserInputService = game:GetService("UserInputService")
 local PassiveKarma = loadModule("PassiveKarma.lua")
 local HealingCurrent = loadModule("HealingCurrent.lua")
 local ParryExtender = loadModule("ParryExtender.lua")
+local ParryTesting = loadModule("ParryTesting.lua")
 local Nametags = loadModule("Nametags.lua")
 local Experiments = loadModule("Experiments.lua")
 local HolyBeam = loadModule("HolyBeam.lua")
@@ -87,6 +96,8 @@ ParryExtender:SetAfterDelay(parryAfterDelay / 1000)
 ParryExtender:SetEnabled(parryExtenderEnabled)
 ParryExtender:SetDodgeEnabled(parryDodgeEnabled)
 ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
+ParryTesting:SetEnabled(parryTestingEnabled)
+ParryTesting:SetBeforeDelay(parryTestingBeforeDelay / 1000)
 PassiveKarma:SetEnabled(passiveKarmaEnabled)
 Nametags:SetEnabled(nametagsEnabled)
 Experiments:SetEnabled(experimentsEnabled)
@@ -182,6 +193,39 @@ experimentsTab:Checkbox({
 
         Experiments:SetEnabled(enabled)
         settings.ExperimentsEnabled = enabled
+        saveSettings()
+    end,
+})
+
+local parryExtenderCheckbox
+local parryTestingCheckbox = experimentsTab:Checkbox({
+    Label = "Parry Testing",
+    Value = parryTestingEnabled,
+    Callback = function(_, enabled)
+        if enabled then
+            ParryExtender:SetEnabled(false)
+            settings.ParryExtenderEnabled = false
+            if parryExtenderCheckbox then
+                parryExtenderCheckbox:SetTicked(false)
+            end
+        end
+
+        ParryTesting:SetEnabled(enabled)
+        settings.ParryTestingEnabled = enabled
+        saveSettings()
+    end,
+})
+
+experimentsTab:Slider({
+    Label = "Parry Testing Before Delay (ms)",
+    MinValue = 0,
+    MaxValue = 2000,
+    Value = parryTestingBeforeDelay,
+    Format = "%dms",
+    Callback = function(_, value)
+        parryTestingBeforeDelay = math.clamp(math.round(value), 0, 2000)
+        settings.ParryTestingBeforeDelay = parryTestingBeforeDelay
+        ParryTesting:SetBeforeDelay(parryTestingBeforeDelay / 1000)
         saveSettings()
     end,
 })
@@ -299,10 +343,16 @@ holySlashesBindButton = combatTab:Button({
 })
 updateHolySlashesBindButton()
 
-combatTab:Checkbox({
+parryExtenderCheckbox = combatTab:Checkbox({
     Label = "Enable Parry Extender",
     Value = parryExtenderEnabled,
     Callback = function(_, enabled)
+        if enabled then
+            ParryTesting:SetEnabled(false)
+            settings.ParryTestingEnabled = false
+            parryTestingCheckbox:SetTicked(false)
+        end
+
         ParryExtender:SetEnabled(enabled)
         settings.ParryExtenderEnabled = enabled
         saveSettings()
@@ -377,6 +427,7 @@ miscellaneousTab:Button({
         HealingCurrent:SetEnabled(false)
         ParryExtender:SetEnabled(false)
         ParryExtender:SetDodgeEnabled(false)
+        ParryTesting:SetEnabled(false)
         Nametags:SetEnabled(false)
         Experiments:SetEnabled(false)
         HolyBeam:SetEnabled(false)

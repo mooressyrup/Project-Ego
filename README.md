@@ -15,6 +15,7 @@ loadstring(game:HttpGet(
 - `HealingCurrent.lua`: Healing Current hotkey
 - `HolySlashes.lua`: Holy Slashes hotkey
 - `ParryExtender.lua`: delayed parry hotkey
+- `ParryTesting.lua`: cancellable delayed-parry experiment
 - `Nametags.lua`: RankTag visibility control
 
 Press `F2` to show or hide the GUI.
