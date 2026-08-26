@@ -6,6 +6,8 @@ local ParryTesting = {}
 local localPlayer = Players.LocalPlayer
 local enabled = false
 local beforeDelay = 0
+local parrySendCount = 0
+local lastParrySentAt = -math.huge
 
 function ParryTesting:SetEnabled(value)
     enabled = value
@@ -27,6 +29,42 @@ local function fireParry()
     end
 end
 
+local function trackParryRemoteCalls()
+    if type(hookmetamethod) ~= "function" or type(getnamecallmethod) ~= "function" then
+        warn("[Project Ego] Parry Testing cannot detect existing parry remotes in this executor.")
+        return false
+    end
+
+    local originalNamecall
+    local hook = function(self, ...)
+        if getnamecallmethod() == "FireServer"
+            and self.Parent == RunService
+            and self.Name == "ActionMain"
+            and select(1, ...) == "parry" then
+            parrySendCount += 1
+            lastParrySentAt = os.clock()
+        end
+
+        return originalNamecall(self, ...)
+    end
+
+    local hooked, result = pcall(
+        hookmetamethod,
+        game,
+        "__namecall",
+        type(newcclosure) == "function" and newcclosure(hook) or hook
+    )
+    if not hooked then
+        warn("[Project Ego] Parry Testing could not hook parry remotes: " .. tostring(result))
+        return false
+    end
+
+    originalNamecall = result
+    return true
+end
+
+local canDetectParryRemote = trackParryRemoteCalls()
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed or not enabled or input.KeyCode ~= Enum.KeyCode.F then
         return
@@ -38,6 +76,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         return
     end
 
+    local parrySendCountAtPress = parrySendCount
+    local pressedAt = os.clock()
     local cancelled = false
     local cancellationConnection
     cancellationConnection = equippedTool:GetPropertyChangedSignal("Parent"):Connect(function()
@@ -50,7 +90,10 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     task.delay(beforeDelay, function()
         cancellationConnection:Disconnect()
 
-        if enabled and not cancelled and localPlayer.Character == character and equippedTool.Parent == character then
+        local parryAlreadySent = parrySendCount ~= parrySendCountAtPress
+            or lastParrySentAt >= pressedAt - 0.05
+        if canDetectParryRemote and enabled and not cancelled and not parryAlreadySent
+            and localPlayer.Character == character and equippedTool.Parent == character then
             fireParry()
         end
     end)
