@@ -57,6 +57,7 @@ local parryDodgeEnabled = settings.ParryDodgeEnabled == true
 local parryDodgeDelay = math.clamp(tonumber(settings.ParryDodgeDelay) or 500, 0, 2000)
 local parryTestingEnabled = settings.ParryTestingEnabled == true
 local parryTestingBeforeDelay = math.clamp(tonumber(settings.ParryTestingBeforeDelay) or 0, 0, 2000)
+local globalShadowsDisabled = settings.GlobalShadowsDisabled == true
 local passiveKarmaEnabled = settings.PassiveKarmaEnabled == true
 local nametagsEnabled = settings.NametagsEnabled == true
 local healingCurrentEnabled = settings.HealingCurrentEnabled == true
@@ -98,6 +99,7 @@ ParryExtender:SetDodgeEnabled(parryDodgeEnabled)
 ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
 ParryTesting:SetEnabled(parryTestingEnabled)
 ParryTesting:SetBeforeDelay(parryTestingBeforeDelay / 1000)
+Experiments:SetGlobalShadowsDisabled(globalShadowsDisabled)
 PassiveKarma:SetEnabled(passiveKarmaEnabled)
 Nametags:SetEnabled(nametagsEnabled)
 Experiments:SetEnabled(experimentsEnabled)
@@ -193,6 +195,16 @@ experimentsTab:Checkbox({
 
         Experiments:SetEnabled(enabled)
         settings.ExperimentsEnabled = enabled
+        saveSettings()
+    end,
+})
+
+experimentsTab:Checkbox({
+    Label = "Disable Global Shadows",
+    Value = globalShadowsDisabled,
+    Callback = function(_, enabled)
+        Experiments:SetGlobalShadowsDisabled(enabled)
+        settings.GlobalShadowsDisabled = enabled
         saveSettings()
     end,
 })
@@ -430,6 +442,7 @@ miscellaneousTab:Button({
         ParryTesting:SetEnabled(false)
         Nametags:SetEnabled(false)
         Experiments:SetEnabled(false)
+        Experiments:SetGlobalShadowsDisabled(false)
         HolyBeam:SetEnabled(false)
         HolySlashes:SetEnabled(false)
 

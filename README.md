@@ -16,6 +16,7 @@ loadstring(game:HttpGet(
 - `HolySlashes.lua`: Holy Slashes hotkey
 - `ParryExtender.lua`: delayed parry hotkey
 - `ParryTesting.lua`: cancellable delayed-parry experiment
+- `Experiments.lua`: BookCD Karma and lighting experiments
 - `Nametags.lua`: RankTag visibility control
 
 Press `F2` to show or hide the GUI.

@@ -1,11 +1,14 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
 
 local Experiments = {}
 local localPlayer = Players.LocalPlayer
 local enabled = false
 local runId = 0
 local bookCDRemovedConnection
+local globalShadowsDisabled = false
+local originalGlobalShadows = Lighting.GlobalShadows
 
 function Experiments:SetEnabled(value)
 	if enabled == value then
@@ -50,6 +53,11 @@ end
 
 function Experiments:IsEnabled()
 	return enabled
+end
+
+function Experiments:SetGlobalShadowsDisabled(value)
+	globalShadowsDisabled = value
+	Lighting.GlobalShadows = not globalShadowsDisabled and originalGlobalShadows
 end
 
 return Experiments
