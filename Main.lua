@@ -60,6 +60,7 @@ local nametagsEnabled = settings.NametagsEnabled == true
 local healingCurrentEnabled = settings.HealingCurrentEnabled == true
 local parryExtenderEnabled = settings.ParryExtenderEnabled == true
 local experimentsEnabled = settings.ExperimentsEnabled == true
+local holySlashesEnabled = settings.HolySlashesEnabled == true
 
 if experimentsEnabled then
     passiveKarmaEnabled = false
@@ -77,6 +78,7 @@ local ParryExtender = loadModule("ParryExtender.lua")
 local Nametags = loadModule("Nametags.lua")
 local Experiments = loadModule("Experiments.lua")
 local HolyBeam = loadModule("HolyBeam.lua")
+local HolySlashes = loadModule("HolySlashes.lua")
 
 HealingCurrent:SetDelay(healingDelay / 1000)
 HealingCurrent:SetEnabled(healingCurrentEnabled)
@@ -88,6 +90,7 @@ ParryExtender:SetDodgeDelay(parryDodgeDelay / 1000)
 PassiveKarma:SetEnabled(passiveKarmaEnabled)
 Nametags:SetEnabled(nametagsEnabled)
 Experiments:SetEnabled(experimentsEnabled)
+HolySlashes:SetEnabled(holySlashesEnabled)
 
 local savedBinding = settings.HealingCurrentBinding
 local healingCurrentBinding = type(savedBinding) == "string"
@@ -101,6 +104,13 @@ local holyBeamBinding = type(savedHolyBeamBinding) == "string"
     and (Enum.KeyCode[savedHolyBeamBinding] or Enum.UserInputType[savedHolyBeamBinding])
 if holyBeamBinding then
     HolyBeam:SetBinding(holyBeamBinding)
+end
+
+local savedHolySlashesBinding = settings.HolySlashesBinding
+local holySlashesBinding = type(savedHolySlashesBinding) == "string"
+    and (Enum.KeyCode[savedHolySlashesBinding] or Enum.UserInputType[savedHolySlashesBinding])
+if holySlashesBinding then
+    HolySlashes:SetBinding(holySlashesBinding)
 end
 
 local window = ImGui:CreateWindow({
@@ -256,6 +266,39 @@ holyBeamBindButton = combatTab:Button({
 })
 updateHolyBeamBindButton()
 
+local holySlashesBindButton
+local function updateHolySlashesBindButton()
+    setWidgetLabel(holySlashesBindButton, "Bind Holy Slashes (" .. HolySlashes:GetBindingName() .. ")")
+end
+
+combatTab:Checkbox({
+    Label = "Enable Holy Slashes",
+    Value = holySlashesEnabled,
+    Callback = function(_, enabled)
+        HolySlashes:SetEnabled(enabled)
+        settings.HolySlashesEnabled = enabled
+        saveSettings()
+    end,
+})
+
+holySlashesBindButton = combatTab:Button({
+    Label = "",
+    Callback = function()
+        setWidgetLabel(holySlashesBindButton, "Press a key or mouse button...")
+
+        task.spawn(function()
+            local input = UserInputService.InputBegan:Wait()
+            local bindingName = HolySlashes:SetBinding(input)
+            if bindingName then
+                settings.HolySlashesBinding = bindingName
+                saveSettings()
+                updateHolySlashesBindButton()
+            end
+        end)
+    end,
+})
+updateHolySlashesBindButton()
+
 combatTab:Checkbox({
     Label = "Enable Parry Extender",
     Value = parryExtenderEnabled,
@@ -337,6 +380,7 @@ miscellaneousTab:Button({
         Nametags:SetEnabled(false)
         Experiments:SetEnabled(false)
         HolyBeam:SetEnabled(false)
+        HolySlashes:SetEnabled(false)
 
         if visibilityConnection then
             visibilityConnection:Disconnect()

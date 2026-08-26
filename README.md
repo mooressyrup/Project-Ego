@@ -13,6 +13,7 @@ loadstring(game:HttpGet(
 - `Main.lua`: entry point and GUI
 - `PassiveKarma.lua`: Passive Karma feature
 - `HealingCurrent.lua`: Healing Current hotkey
+- `HolySlashes.lua`: Holy Slashes hotkey
 - `ParryExtender.lua`: delayed parry hotkey
 - `Nametags.lua`: RankTag visibility control
 
